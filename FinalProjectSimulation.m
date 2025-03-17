@@ -71,6 +71,7 @@ end
 rho_firstInterface = reflectivities(1, accessIndex(mat1));
 rho_secondInterface = reflectivities(accessIndex(mat1), accessIndex(mat2));
 rho_gnd = reflectivities(accessIndex(mat2), 6);
+rho_crevasse = reflectivities(accessIndex(mat1), 6);
 
 % ABSORPTIVITY LOSSES:
 L_1 = attenuation(mat1, snowH, 0.3, realDielectric, imagDielectric);
@@ -121,9 +122,18 @@ finalImage = zeros(length(t), length(x));
 
 % Populate finalImage with filtered output
 for i = 1:length(x)
-returnSurf = p_rSurf(i) * chirp(t - td_surf(i), B, f_c, T);
-returnInterface = p_rInterface(i) * chirp(t - td_interface(i), B, f_c, T);
-returnGnd = p_rGnd(i) * chirp(t - td_gnd(i), B, f_c, T);
+    if snowH(i) == 0
+        returnSurf = 0;
+    else
+        returnSurf = p_rSurf(i) * chirp(t - td_surf(i), B, f_c, T);
+    end
+    if iceH(i) == 0
+        returnInterface = 0;
+        returnGnd = p_rGnd(i) * rho_crevasse / rho_gnd * chirp(t - td_gnd(i), B, f_c, T);
+    else
+        returnInterface = p_rInterface(i) * chirp(t - td_interface(i), B, f_c, T);
+        returnGnd = p_rGnd(i) * chirp(t - td_gnd(i), B, f_c, T);
+    end
 
 returnNoise = p_n * randn(1, length(t));
 returnTot = returnSurf + returnInterface + returnGnd + returnNoise;
